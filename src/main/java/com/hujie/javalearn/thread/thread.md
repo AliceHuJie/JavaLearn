@@ -66,7 +66,18 @@ Happens before原则：
 
   volatile 保证可见性，有序性。不能保证原子性  比如i++， 如果要保证原子性，需要配合锁使用
   
-* 锁
+* 锁  
+  * synchronized  
+   使用：  
+   方法（静态方法，普通方法）或者代码块（静态代码块，非静态代码块）  
+     锁对象或者锁class对象   
+     
+     锁方法时，方法编译后会有标识ACC_Sychronized,锁代码块时，会在锁的代码前后有指令monitor_enter 和monitor_exit指令  
+       
+      重量级锁，可重入
+      
+      
+     
   
   
   
