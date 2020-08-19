@@ -4,7 +4,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
-public class ThreadCreate {
+public class Demo1_ThreadCreate {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         new Thread01().start();
