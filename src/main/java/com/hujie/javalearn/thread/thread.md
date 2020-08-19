@@ -50,6 +50,10 @@ cpu -> 工作内存  -> 主内存
 Happens before原则：   
 传递原则，volatile， 锁lock晚于unlock等
   
+* Volatile   
+并发是单个JVM下的线程数量  
+分布式是多实例  
+
 
 
 

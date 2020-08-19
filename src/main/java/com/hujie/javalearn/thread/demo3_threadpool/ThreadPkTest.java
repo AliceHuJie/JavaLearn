@@ -1,4 +1,4 @@
-package com.hujie.javalearn.thread.threadpool;
+package com.hujie.javalearn.thread.demo3_threadpool;
 
 import java.util.ArrayList;
 import java.util.Random;

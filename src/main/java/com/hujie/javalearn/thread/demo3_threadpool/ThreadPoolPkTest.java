@@ -1,8 +1,7 @@
-package com.hujie.javalearn.thread.threadpool;
+package com.hujie.javalearn.thread.demo3_threadpool;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

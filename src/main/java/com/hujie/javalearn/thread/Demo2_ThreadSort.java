@@ -1,6 +1,6 @@
 package com.hujie.javalearn.thread;
 
-public class ThreadSort {
+public class Demo2_ThreadSort {
     public static void main(String[] args) throws InterruptedException {
         Thread thread1 = new Thread(() -> {
             System.out.println("线程1");
