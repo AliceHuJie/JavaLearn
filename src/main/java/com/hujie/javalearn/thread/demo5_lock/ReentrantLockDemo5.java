@@ -17,7 +17,6 @@ public class ReentrantLockDemo5 implements Runnable {
 
             }
         } catch (InterruptedException e) {
-            System.out.println("等待获取锁过程中被打断");
             e.printStackTrace();
         } finally {                               // 一定要释放锁
             if (lock.isHeldByCurrentThread()) {   //需要判断锁是否被当前线程持有，否则未获取到锁的线程释放锁失败:IllegalMonitorStateException
