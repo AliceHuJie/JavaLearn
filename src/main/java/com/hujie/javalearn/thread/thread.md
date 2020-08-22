@@ -76,6 +76,19 @@ Happens before原则：
        
       重量级锁，可重入
       
+      对于普通同步方法，锁是当前实例对象
+      对于静态方法，锁是当前类的class的对象
+      对于同步方法块，锁是syncronized括号中的对象
+      
+    
+   * Lock&ReentrantLock&ReentrantReadWriteLock  
+   lock
+   unlock
+   tryLock
+   lockInterruptibly
+   
+   
+   
       
      
   
