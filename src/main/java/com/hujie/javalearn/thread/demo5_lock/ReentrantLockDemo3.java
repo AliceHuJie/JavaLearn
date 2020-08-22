@@ -2,12 +2,12 @@ package com.hujie.javalearn.thread.demo5_lock;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ReentrantLockDemo1 {
+public class ReentrantLockDemo3 {
     private static int i = 0;
     private ReentrantLock lock = new ReentrantLock();
 
     public static void main(String[] args) throws InterruptedException {
-        ReentrantLockDemo1 demo = new ReentrantLockDemo1();
+        ReentrantLockDemo3 demo = new ReentrantLockDemo3();
         Thread thread1 = new Thread(demo::add);
         Thread thread2 = new Thread(demo::add);
         thread1.start();
