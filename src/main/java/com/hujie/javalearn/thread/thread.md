@@ -84,7 +84,7 @@ Happens before原则：
    * Lock&ReentrantLock&ReentrantReadWriteLock  
    lock
    unlock  
-   tryLock  可加超时时间，超时未获取到，会中断退出
+   tryLock  可加超时时间
    lockInterruptibly 
      
    注意上锁和释放要用try finally
