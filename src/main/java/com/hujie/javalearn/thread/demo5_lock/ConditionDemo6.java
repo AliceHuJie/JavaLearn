@@ -4,7 +4,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Condition1 {
+public class ConditionDemo6 {
     private static Lock lock = new ReentrantLock();
     private static Condition full = lock.newCondition();
     private static Condition empty = lock.newCondition();
@@ -13,7 +13,7 @@ public class Condition1 {
     public static void main(String[] args) {
         new Thread(() -> {
             try {
-                Condition1.producer();
+                ConditionDemo6.producer();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -21,7 +21,7 @@ public class Condition1 {
 
         new Thread(() -> {
             try {
-                Condition1.consumer();
+                ConditionDemo6.consumer();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

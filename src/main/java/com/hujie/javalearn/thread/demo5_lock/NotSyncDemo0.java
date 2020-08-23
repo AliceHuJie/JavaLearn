@@ -1,10 +1,10 @@
 package com.hujie.javalearn.thread.demo5_lock;
 
-public class NotSyncDemo implements Runnable {
+public class NotSyncDemo0 implements Runnable {
     static int i = 0;
 
     public static void main(String[] args) throws InterruptedException {
-        NotSyncDemo demo = new NotSyncDemo();
+        NotSyncDemo0 demo = new NotSyncDemo0();
         Thread thread1 = new Thread(demo);
         Thread thread2 = new Thread(demo);
 
