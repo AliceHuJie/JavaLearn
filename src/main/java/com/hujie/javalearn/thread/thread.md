@@ -104,6 +104,16 @@ Happens before原则：
    getCount() 获取当前数目N
    
   可以实现类似于FutureTask 和join 功能
+  
+  * Semaphore 信号量  
+  用来控制同时访问特定资源的线程数量。  例如并发时限定最多并行的线程数。  
+
+  基于单台JVM的限流, 分布式场景下，限流需要用到redis  
+  使用：  
+  acquire()  获得许可  
+  release() 释放许可  
+  
+  
    
    
    
