@@ -94,6 +94,19 @@ Happens before原则：
    生产、消费模式 Lock condition
    读写锁ReentrantReadWriteLock  读多写少场景  读锁共享，写锁互斥
    
+   * 队列同步器 AbstractQueuedSynchronized
+   ???  
+   
+   * CountDownLatch   
+   构造时传入N, 适用于任务拆分并行，最后等待所有子任务结束的情况。每个子任务执行完成后执行countDown()，当数目减到0时。表明所有的都执行结束。
+   countDown()  执行完任务或某步骤后调用,N--
+   await()  进入等待状态，当countDownLatch数目减到0时自动唤醒
+   getCount() 获取当前数目N
+   
+  可以实现类似于FutureTask 和join 功能
+   
+   
+   
      
    
    
