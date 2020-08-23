@@ -91,7 +91,9 @@ Happens before原则：
    * synchronized VS Lock
    Syncronized 自动， JVM级别， 重入
    Lock 手动，重入，Lock指令 Condition
-   生产、消费模式
+   生产、消费模式 Lock condition
+   读写锁ReentrantReadWriteLock  读多写少场景  读锁共享，写锁互斥
+   
      
    
    
