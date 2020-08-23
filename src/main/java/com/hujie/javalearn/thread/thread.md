@@ -113,6 +113,14 @@ Happens before原则：
   acquire()  获得许可  
   release() 释放许可  
   
+  * Atomic 原子操作包  
+  java.util.concurrent.Atomic  
+  例如常见的AtomicInteger AtomicBoolean  
+  由于i++ 不具有原子性，如果通过加锁实现原子性，会有线程阻塞  
+  这种场景就可以用原子的 AtomicInteger
+  
+  
+  
   
    
    
