@@ -82,12 +82,17 @@ Happens before原则：
       
     
    * Lock&ReentrantLock&ReentrantReadWriteLock  
-   lock
-   unlock  
-   tryLock  可加超时时间
+   lock  
+   unlock   注意上锁和释放要用try finally  
+   tryLock  可加超时时间 (trylock的释放需要判断当前线程是否持有锁，持有才释放）
    lockInterruptibly 
+   
+   
+   * synchronized VS Lock
+   Syncronized 自动， JVM级别， 重入
+   Lock 手动，重入，Lock指令 Condition
+   生产、消费模式
      
-   注意上锁和释放要用try finally
    
    
    
