@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class AtomicIntegerDemo1 implements Runnable {
     private static AtomicInteger i = new AtomicInteger(0);
+    private static int k = 0;
 
     public static void main(String[] args) throws InterruptedException {
         AtomicIntegerDemo1 demo = new AtomicIntegerDemo1();
@@ -15,12 +16,14 @@ public class AtomicIntegerDemo1 implements Runnable {
         thread1.join();
         thread2.join();
         System.out.println(i);
+        System.out.println(k);
     }
 
     @Override
     public void run() {
         for (int j = 0; j < 100000; j++) {
             i.addAndGet(1);   // 原子操作，最后执行的结果会是200000
+            k++;                     // 非原子操作，最后结果不一定是20000
         }
     }
 }
