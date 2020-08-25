@@ -116,6 +116,8 @@ Happens before原则：
   * Atomic 原子操作包  
   java.util.concurrent.Atomic  
   例如常见的AtomicInteger AtomicBoolean  
+  
+   *  AtomicInteger  
   由于i++ 不具有原子性，如果通过加锁实现原子性，会有线程等待加锁，效率不高 
   这种场景就可以用原子的 AtomicInteger  
   
@@ -124,13 +126,16 @@ Happens before原则：
   场景：并发统计（多线程并发计数），订单号生成   
   
   常用API:  
-   addAndGet()  
+  addAndGet()  
   getAndAdd()  
   incrementAndGet()  
   get()
   
   
-  原理: CAS (compareAndSwap)
+  原理: CAS (compareAndSwap)   cas(v, e, n)
+  value (内存位置)  expect (期望的值,上次读到的值)  new(目标值,新值)  
+  如果value地址的当前值与期望值相等,就将其更新为new值
+  
   
   
   
