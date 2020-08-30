@@ -136,9 +136,12 @@ Happens before原则：
   value (内存位置)  expect (期望的值,上次读到的值)  new(目标值,新值)  
   如果value地址的当前值与期望值相等,就将其更新为new值
   
+  CAS ABA问题  
+  例如A线程把A-》B，B线程把B-》A， C线程读取的时候，读到A，会以为还没有改过。  
   
-  
-  
+  怎么去解决ABA问题  加stamp, 类似加版本号。  
+  AtomicStampedReference
+   
   
    
    
