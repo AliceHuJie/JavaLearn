@@ -169,7 +169,9 @@ Happens before原则：
  分段锁：Segement(1.7) 每个segment是一把锁，（ReentrantLock的子类）
  每个分段多个线程put时要加锁，读不加锁
 
-   
+
+arrayList & copyOnWriteArrayList
+copyOnWriteArrayList add扩容时，会copy一份到新的list 并执行新元素的add, 此时所有的get请求会从旧的list获取
   
    
    
