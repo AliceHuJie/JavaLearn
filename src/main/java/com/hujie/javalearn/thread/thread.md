@@ -141,6 +141,34 @@ Happens before原则：
   
   怎么去解决ABA问题  加stamp, 类似加版本号。  
   AtomicStampedReference
+  
+  Collections  
+  map  
+  hashMap & HashTable && ConcurrentHashMap   
+  
+  
+  hashMap 线程不安全的点： 扩容时会重新hash, 扩容时并发的去读取，可能会读到key值    
+  底层结构：   
+  JDK1.7  数组 + 链表  
+  JDK1.8  数组 + 链表 + 红黑树  （当链表的长度达到一定值时就变成红黑树）
+  
+  hashMap初始容量 16， 0.75负载因子。 阈值 = 容量 * 负载因子，数量 > 阈值时，就会扩容
+  扩容（put方法）  
+  key 可以为空
+   
+ 初始化            扩容              key存在              长度大于指定值（8）
+ 数组初始化       size大于阈值       next放入链表           链表变成红黑树
+ 
+ 
+ hashmap 与hashtable的区别
+ hashtable 通过方法加了synchronized 加锁实现线程安全，但是效率低
+ 另一种效率高的hashmap->ConcurrentHashMap
+ 
+ HashTable&ConcurrentHashMap
+ 锁的方式：hashtable jvm锁
+ 分段锁：Segement(1.7) 每个segment是一把锁，（ReentrantLock的子类）
+ 每个分段多个线程put时要加锁，读不加锁
+
    
   
    
