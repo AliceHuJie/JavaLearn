@@ -161,7 +161,7 @@ Happens before原则：
  
  
  hashmap 与hashtable的区别
- hashtable 通过方法加了synchronized 加锁实现线程安全，但是效率低
+ hashtable 通过方法加了synchronized 加锁实现线程安全(put get等方法都有加锁)，但是效率低
  另一种效率高的hashmap->ConcurrentHashMap
  
  HashTable&ConcurrentHashMap
@@ -172,7 +172,8 @@ Happens before原则：
 
 arrayList & copyOnWriteArrayList
 copyOnWriteArrayList add扩容时，会copy一份到新的list 并执行新元素的add, 此时所有的get请求会从旧的list获取
-  
+copyOnWriteArrayList 的 get 没有加锁
+写操作未完成或者写操作完成但是引用还未指向新数据，get就还是从旧数组获取。完成指向新数组后，就从新数组获取
    
    
    

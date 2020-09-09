@@ -27,7 +27,7 @@ public class ArrayListNotSafeDemo {
             }
         }).start();
 
-        Thread.sleep(2000);
+        Thread.sleep(2000);   // put 还在进行  get put 并行
         for (int i = 0; i < list.size(); i++) {
             System.out.println(list.get(i));   // 结果会有null值，说明线程不安全
         }
