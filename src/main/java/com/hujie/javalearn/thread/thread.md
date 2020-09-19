@@ -22,6 +22,13 @@ submit 有返回值， excute 没有
 一个是FutureTask, 一个是Task
 submit底层就是调用的excute方法
 
+
+scheduledTheadPool:  
+   schedule 定时任务，在指定的delay时间后执行一次
+   scheduledAtFixedRate  固定速率连续执行， 在delay时间后，每隔指定时间执行一次
+   scheduledAtFixedDelay  非固定速率连续执行
+
+
 * JMM内存模型  
 缓存：解决CPU与主存频率不匹配问题
 CPU->主存     
@@ -174,8 +181,7 @@ arrayList & copyOnWriteArrayList
 copyOnWriteArrayList add扩容时，会copy一份到新的list 并执行新元素的add, 此时所有的get请求会从旧的list获取
 copyOnWriteArrayList 的 get 没有加锁
 写操作未完成或者写操作完成但是引用还未指向新数据，get就还是从旧数组获取。完成指向新数组后，就从新数组获取
-   
-   
+    
    
      
    
