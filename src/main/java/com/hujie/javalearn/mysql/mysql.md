@@ -72,3 +72,63 @@ uuid比自增整型浪费空间。索引查找过程中数值的比较优于字�
 
 
 
+### 索引最左前缀原理  
+联合索引
+![mysql](../../../../../resources/images/mysql/最左前缀索引.png)  
+
+
+### mysql 调优
+explain  
+`
+explain select (select 1 from actor limit 1) from film
+`
+![mysql](../../../../../resources/images/mysql/explain示例.png)  
+id： 标识select 语句，select 的序列号，有多少select 就有多少个id, id 越大的
+执行优先级越高，相同id的从上往下执行。
+
+select_type：语句对应的类型，
+- 包括简单查询simple
+- 复杂查询 primary:  复杂查询中最外层的select
+- 子查询 subquery： 包含在select 中的子查询，不在from中
+- 衍生类型 derived: 复杂查询中包含在from子句中的查询，查询结果放在临时表，也称派生表
+- union: 在union中的第二个和随后的select
+- union result: 从union临时表检索结果的select
+
+table: 每个select正在访问的表  
+具体表名，或者from子查询时为derivedN派生表，或者unions时为union<M,N>, M,N标识参与union的select的id
+
+type: 关联类型或者访问类型，Mysql 决定如何查找表中的行，查找数据记录的大概范围  
+从优到差： system > const > eq_ref > ref > range > index > all
+- system: 查询的表中只有一行记录，system 是const的特例
+- const: 查询结果只有一条数据时（例如用唯一索引或主键索引查询时）
+- eq-ref: 关联查询时，被关联的表B每次关联时只能关联到一条记录(唯一值关联)。 A left join B on A.fk = B.pk(B.unique_key)
+- ref: 相比eq_ref, 关联是使用的是B表的普通索引（非主键或唯一），关联时可以关联出多条记录。1对多关联
+- range: 范围索引通常出现在in between, > < >= <=时，使用索引检索给定范围的行
+- index: 扫描全表索引，通常会比All 快一点, 只在索引中查数据（index是从索引读取的，All从硬盘读取）  
+  ` select id from film(id是索引列)`
+- All: 全表扫描，会去硬盘中查数据，这种情况通常需要增加索引了  
+  `select * from film`
+
+possible_keys: mysql 分析出来可能用到的索引（可能有分析时没有分析到，possile_key为null,但是实际执行时又有用到的索引。）
+
+key: 实际执行时，实际用到的索引（例如分析时有可能的索引，但是实际执行，比如数据少时，可能实际执行时没有用到索引）
+查询时
+
+key-length: 例如一个索引为int类型（ 4个字节），例如一个四字段的联合索引用到最左两个索引时，key-length就是8（也就可以知道用到的联合索引长度）
+注意，不同类型索引的长度不一致，例如datetime 8字节
+
+ref: 联合索引用到的索引字段引用的另一个表的哪个字段
+![mysql](../../../../../resources/images/mysql/explain_ref.png) 
+rows： mysql估计需要扫描的行数，不一定是实际结果的长度
+
+extra: 
+- using index: 查询的列被索引覆盖，**且where筛选条件是索引的前导列**（联合索引时，按联合索引的顺序出现在where字段中）， 简称覆盖所有（从内存中的索引就可以查出需要的列，无需硬盘查叶子节点数据）；  
+  例如联合索引A,B  select A,B from t where A = 'xxx'  
+  是性能高的表现  
+- using where, using index: 查询的列被索引覆盖，但是where筛选条件是索引列之一，但是不是索引的前导列（说明联合索引用得不够好）  
+  例如联合索引A,B  select A,B from t where B = 'xxx'  
+  出现此情况时，应该考虑如何优化成using index.(调整where 列字段顺序)  
+  
+  
+如何查看mysql 语句的查询计划：
+![mysql](../../../../../resources/images/mysql/explain_extended.png)  
