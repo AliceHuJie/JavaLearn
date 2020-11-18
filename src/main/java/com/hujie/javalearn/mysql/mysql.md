@@ -79,7 +79,7 @@ uuid比自增整型浪费空间。索引查找过程中数值的比较优于字�
 ![mysql](../../../../../resources/images/mysql/最左前缀索引.png)  
 
 
-#<span id="chapter2">二、索引优化</span>
+# <span id="chapter2">二、索引优化</span>  
 explain  
 `
 explain select (select 1 from actor limit 1) from film
