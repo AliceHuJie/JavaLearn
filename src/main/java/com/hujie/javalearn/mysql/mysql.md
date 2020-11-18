@@ -1,4 +1,6 @@
-#一、索引原理
+[一、索引原理](#chapter1)  
+[二、索引优化](#chapter2)  
+# <span id="chapter1">一、索引原理</span>
 帮助Mysql高效获取数据的排好序的数据结构([数据结构教学网站](https://www.cs.usfca.edu/~galles/visualization/Algorithms.html))   
 存储在文件里  
 索引结构（二叉树，红黑树，Hash, **_Btree_**）
@@ -77,7 +79,7 @@ uuid比自增整型浪费空间。索引查找过程中数值的比较优于字�
 ![mysql](../../../../../resources/images/mysql/最左前缀索引.png)  
 
 
-### mysql 调优
+#<span id="chapter2">二、索引优化</span>
 explain  
 `
 explain select (select 1 from actor limit 1) from film
@@ -125,10 +127,48 @@ extra:
 - using index: 查询的列被索引覆盖，**且where筛选条件是索引的前导列**（联合索引时，按联合索引的顺序出现在where字段中）， 简称覆盖所有（从内存中的索引就可以查出需要的列，无需硬盘查叶子节点数据）；  
   例如联合索引A,B  select A,B from t where A = 'xxx'  
   是性能高的表现  
-- using where, using index: 查询的列被索引覆盖，但是where筛选条件是索引列之一，但是不是索引的前导列（说明联合索引用得不够好）  
+
+- using where, using index: 查询的列被索引覆盖，但是where筛选条件是索引列之一，但**不是索引的前导列**（说明联合索引用得不够好）  
   例如联合索引A,B  select A,B from t where B = 'xxx'  
   出现此情况时，应该考虑如何优化成using index.(调整where 列字段顺序)  
+ 
+- using where: 查询的索引列未被索引覆盖，where筛选条件非索引的前导列
+    例如联合索引A,B  select * from t where B = 'xxx'  
+
+- NULL: 查询的列未被索引覆盖，并且where筛选条件是索引的前导列，意味着用到了索引 
+(前四种就是组合条件： 是否用到覆盖索引，是否where 的索引是索引的前导列)  
   
-  
+- using index condition: 与Using where类似，查询的列不完全被索引覆盖，where条件中是一个前导列的范围；
+
+- using tempory: 从临时表  
+    例如子查询， distinct, group by
+    如何优化using temprory, 进行消除
+    select dinctint name from film;  当对name 建立索引，使其可以通过覆盖索引，直接可以从索引中获取时，就可以不需要建临时表
+
+- using sort: 会对结果使用一个外部索引排序，而不是直接按索引顺序从表里读取行。
+     select * from actor order by name; 当name未建立索引时，会用到using sort; 当对name字段建立索引时，就可以变成using index;
+    （用到索引时，叶子节点数据从左到右是按索引有序的）
+
 如何查看mysql 语句的查询计划：
 ![mysql](../../../../../resources/images/mysql/explain_extended.png)  
+
+
+索引最佳实践
+1. 联合索引全值匹配（尽量把联合索引的字段用全）
+2. 最佳左前缀原则（把联合索引按顺序使用）
+![mysql](../../../../../resources/images/mysql/最左前缀索引.png)  
+联合索引会按顺序进行比较，不按顺序不会用到索引
+3. 不要在索引上做任何操作（计算，函数，（自动或手段）类型转换），会导致索引失效
+4. 存储引擎不能使用索引中范围条件右边的列  
+  EXPLAIN SELECT * FROM employees WHERE name= 'LiLei' AND age = 22 AND position ='manager';  
+  EXPLAIN SELECT * FROM employees WHERE name= 'LiLei' AND age > 22 AND position ='manager';  
+5. 尽量使用覆盖索引（只访问索引的查询（索引列包含查询列）），减少select *语句
+6. mysql使用不等于（!=  <> , 注意，大于小于是可以走索引的）会索引失效，导致全表扫描
+7. is null, is not null 无法使用索引
+8. like 以通配符开头查询 ‘%aaa’会索引失效 
+9. 字符串不加单引号索引失效  
+  select * from user where name = '1000';    
+  select * from user where name = 1000;  
+10. 少用or,用它连接时很多情况下索引会失效  
+
+![mysql](../../../../../resources/images/mysql/索引示例总结.png)  
