@@ -172,3 +172,17 @@ extra:
 10. 少用or,用它连接时很多情况下索引会失效  
 
 ![mysql](../../../../../resources/images/mysql/索引示例总结.png)  
+
+
+in和exsits优化
+原则：小表驱动大表，即小的数据集驱动大的数据集  
+B 表数据更少时：  
+select * from A where id in (select id from B)
+
+
+A表数据更少时：  
+select * from A where exists (select 1 from B where B.id = A.id)
+将主查询A的数据，放到子查询B中做条件验证，根据验证结果（true或false）来决定主查询的数据是否保留  
+EXISTS子查询往往也可以用JOIN来代替（数据少的应该在join前面还是后面？）
+
+总结： 数据少的表要么在in里面，要么在exists前面
