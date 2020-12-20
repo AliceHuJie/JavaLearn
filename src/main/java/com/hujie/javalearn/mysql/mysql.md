@@ -255,6 +255,33 @@ InnoDB与MYISAM最大不同有两点：一是支持事务，而是采用了行�
 
 - 行锁支持事务  
 
+  行锁演示：
+ ``` mysql
+    CREATE TABLE `account` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `name` varchar(255) DEFAULT NULL,
+      `balance` int(11) DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    INSERT INTO `test`.`account` (`name`, `balance`) VALUES ('lilei', '450');
+    INSERT INTO `test`.`account` (`name`, `balance`) VALUES ('hanmei', '16000');
+    INSERT INTO `test`.`account` (`name`, `balance`) VALUES ('lucy', '2400');
+```
+  
+  两个session 更新同一条数据。（由于mysql会自动提交并关闭事务，所以如果两个session都是一条update, 第一个session执行结束锁释放了，无法演示行锁。因此需要手动的开启关闭事务来进行演示）
+  ![mysql](../../../../../resources/images/mysql/lock/transaction_demo1.png)
+  两个session, 其中一个在事务中，未提交时，其他session是读取不到其修改的。只有当第一个session 执行commit时，会话1的改动才能被其他会话感知到。
+  
+  ![mysql](../../../../../resources/images/mysql/lock/transaction_demo2.png)
+  两个session,其中一个事务在修改某一条数据后，在事务提交前，其他session若修改同一条数据，会阻塞等待。（被加了行锁）。
+  当session1 commit提交释放锁的时候，若session2还没有超时，session2的sql会立马执行。最后查询数据库结果，会是后者，也就是session2的结果。
+  
+  若在第二个session中更新其他行，是可以正常操作的。
+  
+  示例可以看出，行锁会有等待，所以行锁是悲观锁。
+  
+  
+  
 - 事务及其ACID属性  
 事务是由一组SQL组成的逻辑处理单元，事务具有以下4个属性
 - 原子性： 事务是一个原子操作单元，其对数据的修改，要么全部执行，要么全部都不执行。  
@@ -262,11 +289,51 @@ InnoDB与MYISAM最大不同有两点：一是支持事务，而是采用了行�
 - 隔离性： 保证事务在不受外部并发操作影响的“独立”环境执行。意味着事务处理过程中的中间状态对外部都是不可见的。  
 - 持久性： 事务完成之后,它对于数据的修改是永久性的,即使出现系统故障也能够保持。
 
-  
+## 并发事务处理带来的问题
+- 更新丢失  
+多个事务选择同一行，基于最初选定值更新该行，由于每个事务都不知道其他事务的存在，就会发生丢失更新问题，最后的更新覆盖了其他事务所作的更新。 
+（事务A覆盖了事务B的修改）
 
-  
+- 脏读  
+事务A读取到了事务B已经修改但是还没有提交的数据，然后还在此数据基础上进行操作，随后事务B回退了。事务A就读取到了脏数据。  
+（未提交的数据就是脏数据）
+
+- 不可重复读 
+一个事务在读取某些数据后的某个时间，再次读取以前读过的数据，却发现读出的数据发生了改变或者被删除了。
+（事务A读取到了事务B已提交的修改数据。不符合隔离性。）
+
+- 幻读  
+一个事务按相同的查询条件，重新检索以前检索过的数据。却发现事务中多读取到了几条数据。
+（事务A读取到了事务B已提交的新增数据）
+
+## 事务隔离级别
+数据库通过引入事务隔离级别，来解决以上的并发事务处理带来的问题。
+脏读，不可重复读， 幻读，都是数据库读一致性问题。必须由数据库提供一定的事务隔离机制来解决。
+
+隔离级别       脏读      不可重复读      幻读
+读未提交       可能        可能         可能
+读已提交      不可能       可能         可能
+可重复读      不可能      不可能        可能
+可串行化      不可能      不可能        不可能
 
 
+查看数据库当前隔离级别  
+(mysql 默认隔离级别是REPEATABLE-READ可重复读。)
 
+```mysql
+show variables like 'tx_isolation';            -- mysql 8 以前
+show variables like 'transaction_isolation';   -- mysql 8
+
+select @@tx_isolation;                         -- mysql 8 以前
+select @@transaction_isolation;                -- mysql 8
+
+-- 修改当前会话的隔离级别
+set session transaction isolation level read committed;
+-- 修改全局的隔离级别
+set global transaction isolation level read committed;
+```
+
+下面设置成读已提交来演示脏读（事务A执行过程中读取到了事务B已提交的新增数据）。
+  ![mysql](../../../../../resources/images/mysql/lock/read_committed_demo1.png)
 
 ## 传播机制
