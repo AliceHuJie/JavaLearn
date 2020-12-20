@@ -186,3 +186,87 @@ select * from A where exists (select 1 from B where B.id = A.id)
 EXISTS子查询往往也可以用JOIN来代替（数据少的应该在join前面还是后面？）
 
 总结： 数据少的表要么在in里面，要么在exists前面
+
+
+## Mysql 锁与事务隔离级别
+锁是计算机协调多线程或进程并发访问共享资源的一种机制。
+
+锁的分类：  
+- 按性能分：悲观锁和乐观锁（按版本对比 MVCC）  
+
+  乐观锁： 比如多个线程去更新同一个字段，通过版本机制控制一个线程执行成功。  
+   update table set field1 = value1 , version = version + 1 where version = 2;  
+   悲观锁：会阻塞等待，乐观锁不会等待。 
+
+- 按对数据库的操作分：读锁和写锁（都是悲观锁）    
+  
+  读锁： 共享锁，多个读操作可以同时进行而不会互相影响。  
+  写锁（排他锁）：当前写操作若没有完成，会阻塞其他写锁和读锁。  
+  
+- 按锁的粒度分： 表锁和行锁
+
+### 表锁（偏读）  
+  表锁偏向MyISAM存储引擎，开销小，加锁快，无死锁，锁定粒度大，发生锁冲突的概率最高，并发度最低。
+``` mysql
+create table `lock`
+(
+	id int not null,
+	name varchar(20) null,
+	constraint lock_pk
+		primary key (id)
+);
+
+INSERT INTO `test`.`mylock` (`id`, `name`) VALUES (1, 'zhangsan')；
+INSERT INTO `test`.`mylock` (`id`, `name`) VALUES (2, 'lisi');
+INSERT INTO `test`.`mylock` (`id`, `name`) VALUES (3, 'wangwu');
+```
+- 手动增加表锁  
+```
+lock table 表名（read）write, 表名2 read(write);
+```
+- 查看表上加的锁  
+```
+show open tables;
+```
+- 删除表锁  
+```
+unlock tables;
+```
+
+- 案例分析（加读锁）
+![mysql](../../../../../resources/images/mysql/lock/read_lock_demo1.png)  
+可见session1对mylock加读锁时，session2仍可以正常的进行读操作。
+![mysql](../../../../../resources/images/mysql/lock/read_lock_demo2.png)
+可见session1对mylock加读锁时，其它session进行插入或更新时会等待。
+![mysql](../../../../../resources/images/mysql/lock/read_lock_demo3.png)
+可见session1对mylock加读锁时，当前session继续进行插入或更新时会报错。
+
+- 案例分析（加写锁）
+![mysql](../../../../../resources/images/mysql/lock/write_lock_demo1.png)
+可见session1对mylock加写锁时，当前session继续进行查询或者更新插入时可以正常运行。
+![mysql](../../../../../resources/images/mysql/lock/write_lock_demo2.png)
+可见session1对mylock加写锁时，其他session继续进行查询更新插入时会等待，当session1 释放锁时，其他session就可以继续运行。
+
+【总之】读锁会阻塞写，但是不会阻塞读。而写锁会把其他session读和写都阻塞。
+  
+### 行锁（偏写）
+行锁偏向InnoDB存储引擎，开销大，加锁慢，会出现死锁，锁定粒度最小，发生锁冲突的概率最低，并发度也最高。
+InnoDB与MYISAM最大不同有两点：一是支持事务，而是采用了行级锁。  
+
+- 行锁支持事务  
+
+- 事务及其ACID属性  
+事务是由一组SQL组成的逻辑处理单元，事务具有以下4个属性
+- 原子性： 事务是一个原子操作单元，其对数据的修改，要么全部执行，要么全部都不执行。  
+- 一致性： 在事务开始和结束时，数据都必须保持一致状态。  
+- 隔离性： 保证事务在不受外部并发操作影响的“独立”环境执行。意味着事务处理过程中的中间状态对外部都是不可见的。  
+- 持久性： 事务完成之后,它对于数据的修改是永久性的,即使出现系统故障也能够保持。
+
+  
+
+  
+
+
+
+
+## 传播机制
