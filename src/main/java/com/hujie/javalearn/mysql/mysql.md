@@ -332,8 +332,24 @@ set session transaction isolation level read committed;
 -- 修改全局的隔离级别
 set global transaction isolation level read committed;
 ```
+下面设置成读未提交来演示脏读（事务A执行过程中读取到了事务B未提交的数据）。
+  ![mysql](../../../../../resources/images/mysql/lock/read_uncomitted_demo1.png)
 
-下面设置成读已提交来演示脏读（事务A执行过程中读取到了事务B已提交的新增数据）。
+下面设置成读已提交来演示不会出现脏读。
+  ![mysql](../../../../../resources/images/mysql/lock/read_committed_demo0.png)
+
+但是读已提交没有解决幻读（事务A执行过程中读取到了事务B已提交的新增数据）。
   ![mysql](../../../../../resources/images/mysql/lock/read_committed_demo1.png)
+  
+读已提交也没有解决不可重复读的问题
+  ![mysql](../../../../../resources/images/mysql/lock/read_commited_demo2.png)
 
+继续修改为可重复读，也就是mysql 默认隔离级别。
+  ![mysql](../../../../../resources/images/mysql/lock/repeatable_read_demo1.png)
+   按理可重复读隔离级别时，其他事务进行插入数据并提交后，当前事务查询会出现幻读，但结果并没有。
+  ![mysql](../../../../../resources/images/mysql/lock/repeatable_read_demo2.png)
+   当可重复读情况下，其余事务对数据修改并提交，当前事务多次select 结果相同，也就是可重复读，但是执行update后，数据并不是事务A查询出的值+50 ，
+   而是被B事务提交后的数据库的实际值-50 + 50. 
+   原因是： 可重复读的隔离级别下，使用了MVCC（多版本并发控制），select 操作不会更新版本号，是快照版本（历史版本），
+   insert, update 和delete 会更新版本号，是当前读（当前版本）。
 ## 传播机制
