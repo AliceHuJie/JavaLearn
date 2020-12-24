@@ -376,6 +376,45 @@ set global transaction isolation level read committed;
    
    插入小于1的数据可以成功。
    ![mysql](../../../../../resources/images/mysql/lock/jian_xi_lock_demo3.png)
+### 行锁分析 
+```mysql
+show variables like 'innodb_row_lock%';
+```
+   ![mysql](../../../../../resources/images/mysql/lock/row_lock_anlalyze.png)
+- Innodb_row_lock_current_waits: 当前正在等待锁定的数量
+- Innodb_row_lock_time: 从系统启动到现在锁定总时间长度
+- Innodb_row_lock_time_avg: 每次等待所花平均时间
+- Innodb_row_lock_time_max：从系统启动到现在等待最长的一次所花时间
+- Innodb_row_lock_waits:系统启动后到现在总共等待的次数
+   
+   下图是一个session锁中某一条数据，另一个session也试图想对同一条数据加锁。通过行锁相关变量分析，可以看到当前处于行锁等待中的数量为1.
+   ![mysql](../../../../../resources/images/mysql/lock/row_lock_demo2.png)
 
 
- 
+
+ ### 死锁
+ 要形成死锁，及session各自持有自己的锁，同时又相互等待其他session持有的锁，互相都等待且不释放自己的锁。  
+ （可以用update 语句占有行锁，或者select  ...  for update）  
+ ``` mysql
+ # 先两个session 各自begin开启事务
+ select * from test.account where id = 1 for update; -- session1
+ select * from test.account where id = 2 for update; -- session2
+ select * from test.account where id = 2 for update; -- session1
+ select * from test.account where id = 1 for update; -- session2
+ ```
+  ![mysql](../../../../../resources/images/mysql/lock/dead_lock_demo1.png)
+  
+大多数情况mysql可以自动检测死锁并回滚产生死锁的那个事务，但是有些情况mysql没法自动检测死锁
+```mysql
+# 查看近期死锁日志
+show engine innodb status;
+```
+  ![mysql](../../../../../resources/images/mysql/lock/dead_lock_demo2.png)
+
+
+### 优化建议
+- 尽可能让所有数据检索都通过索引来完成，避免无索引行锁升级为表锁  
+- 合理设计索引，尽量缩小锁的范围  
+- 尽可能减少检索条件，避免间隙锁  
+- 尽量控制事务大小，减少锁定资源量和时间长度  
+- 尽可能低级别事务隔离  
