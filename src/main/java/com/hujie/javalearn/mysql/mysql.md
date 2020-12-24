@@ -356,8 +356,26 @@ set global transaction isolation level read committed;
    A 事务多次查询， B事务新增数据并提交，A再次查询结果一致，没有出现幻读。
    但是，如果A事务若此时对B事务刚刚插入的那条数据执行update操作后，再次查询，会查询到B事务已提交的数据。
    （如果更新的不是事务B刚刚插入的数据，而是之前已经可以查到的数据，更新后再次查询，仍然查不到B已提交的新增数据）
-     ![mysql](../../../../../resources/images/mysql/lock/repeatable_read_demo3.png)
+    ![mysql](../../../../../resources/images/mysql/lock/repeatable_read_demo3.png)
    
    可串行化可解决上述问题，但是效率相对更低。 分布式场景下加锁，也是一定程度上的使之变成可串行化。
    
-## 传播机制
+   
+   
+   Q: 当mysql 默认是repeatable-read隔离级别的情况下，有办法解决幻读问题吗？
+   间隙锁在某些情况下可以解决幻读问题。  
+   某个session更新数据时对某个范围加间隙锁，其他session没法插入这个范围内的数据。
+    ![mysql](../../../../../resources/images/mysql/lock/jian_xi_lock.png)
+
+   如果其他session插入的数据在间隙锁之外，就不会阻塞。需要注意的是，间隙锁锁的是索引之间的间隙。如果一个表只有10条数据，id
+   分别为1-10， 当where对其中  3 < id < 7 之间的数据更新时，为了避免其他session插入该范围内的数据使得当前session出现幻读，间隙锁会对
+   该索引范围内的数据加间隙锁，也就是无法插入3~7内的数据。范围外数据可正常插入。
+   
+   但是如果加锁的范围为 1< id <100 .由于实际索引值没有到100，只有10. 这种情况实际锁的间隙锁是 > 1的范围. 此时即使插入id为300的数据也会阻塞。
+   ![mysql](../../../../../resources/images/mysql/lock/jian_xi_lock_demo2.png)  
+   
+   插入小于1的数据可以成功。
+   ![mysql](../../../../../resources/images/mysql/lock/jian_xi_lock_demo3.png)
+
+
+ 
