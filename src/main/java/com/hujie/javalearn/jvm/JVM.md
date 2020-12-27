@@ -1,4 +1,11 @@
-## JVM整体结构
+
+## 一、JVM 调优目的  
+  STW ( stop the world)  JVM FULL GC时会停止掉所有其他用户线程，只做垃圾收集。  
+  full Gc 次数越少越好，每次Full Gc 时间越短越好。
+  
+  了解JVM底层结构及原理，才能实现对JVM的优化
+
+## 二、JVM整体结构
 jvm 主要由三大部分组成：
 - 类加载子系统
 - 运行时数据区  
@@ -40,8 +47,9 @@ public class JvmDemo {
 ```
 该demo对应的数据存储示例如下。局部变量等存放在JAVA方法栈，对象存在堆中，方法栈中的引用指向堆中的对象。
 ![jvm](../../../../../resources/images/jvm/jvm_demo1.png) 
-动态链接是指接口类的引用，调用某个方法时（比如上面的put()方法时，能动态的找到对应的实现类，并调用其相应方法）
-可以通过javap -c JvmDemo.class 就字节码进行反编译查看。
+动态链接是指接口类的引用，调用某个方法时（比如上面的put()方法时，能动态的找到对应的实现类，并调用其相应方法）  
+
+可以通过javap -c JvmDemo.class 对字节码进行反编译查看。
 ```class
 // Compiled from "JvmDemo.java"
 public class com.hujie.javalearn.jvm.demo.JvmDemo {
@@ -73,7 +81,7 @@ public class com.hujie.javalearn.jvm.demo.JvmDemo {
 ```
 
 
-## JVM运行时数据区
+## 2.2 JVM运行时数据区
 - java 栈  
    一个线程对应一个栈  
    每个方法在执行的同时都会创建一个栈帧  
@@ -82,6 +90,7 @@ public class com.hujie.javalearn.jvm.demo.JvmDemo {
    线程请求的栈深度大于虚拟机栈所允许的深度，将抛出StackOverFlowError异常, 可通过 -Xss指定栈空间大小
 
 - native 本地方法栈（线程私有） 
+
   （当调用到本地方法时会涉及，比如Thread.start()  内部就由一个native的start0方法） 
   执行引擎遇到native方法时，就会调用本地方法库。
 
@@ -97,16 +106,33 @@ public class com.hujie.javalearn.jvm.demo.JvmDemo {
  当申请不到足够空间时会触发outOfMemoryException， 可通过-Xmx -Xms指定最大堆和最小堆.  
  是垃圾回收的主要区域。
   ![jvm](../../../../../resources/images/jvm/heap_structure.png) 
-
+  
+  新生代老年代 1： 2  
+  eden   from  to  8 : 1 ：1  
+  元数据区： 元数据区取代了永久代(jdk1.8以前)，区别在于元数据区并不在虚拟机中，而是使用本地物理内存。  
+            
+            
+            和永久代类似，都是对JVM规范中方法区的实现。
+            
+            元数据区的动态扩展。 默认-XX:Metaspacesize值为21MB的高水位线。一旦触及则Full GC将被触发并卸载没有用的类。  
+            然后高水位线将会重置。新的高水位线的值取决于GC后释放的元空间。  
+            如果释放的空间少，这个高水位线则上升。如果释放空间过多，则高水位线下降。
+            
+            为什么jdk1.8 方法区取代了永久代？  
+            移除永久代是为融合HotSpot JVM与 JRockit VM而做出的努力，因为JRockit没有永久代，不需要配置永久代
+            
+ 
   
 - 栈，堆，方法区的交互关系  
   Dog d =new Dog();
   d 是存在于栈中的引用， Dog类的对象类型数据（类基本信息）存在方法区， 具体对象实例数据在Java堆中。
 
-## JVM 调优目的  
-  STW ( stop the world)  JVM FULL GC时会停止掉所有其他用户线程，只做垃圾收集。
-  
-  full Gc 次数越少越好，每次Full Gc 时间越短越好。
+## JVM 2.3 执行引擎  
+  编译型： 统一编译，后续直接执行，第一次执行慢。
+  解释型： 翻译一行执行一行，速度慢
+ 
+ JVM 是mixed 模式，java -v 命令输出可以看到。
+
 
 
 ## JVM类加载器
