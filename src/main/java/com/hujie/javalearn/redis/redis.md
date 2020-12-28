@@ -64,7 +64,41 @@
      ```
   
 - zset  
-  有序集合
+  有序集合，给每个 value 赋予一个 score，代表这个 value 的排序权重
+  应用场景： 比如存学生id和成绩，按分数排序即是排名。
+            热搜排行榜  
+            
+       ```redis
+       zadd users  98 aaa     -- 添加1个元素，score为98
+       zadd users  60 bbb    
+       zcard users            -- 获取长度  返回2
+       zscore users  aaa      -- 获取aaa分数
+       zrank  users  aaa      -- 获取aaa的排名  返回1
+       ```
+       
+ - 其他高级命令  
+   - keys   
+   全量遍历键， 列出符合正则的所有键。 （大数据量时不推荐使用）  
+   ```redis
+    keys user*                   -- 查出user开头的所有键
+    keys *                       -- 查出所有键
+    keys us*r
+   ```
+   
+   - scan  
+   在keys 全量匹配的基础上，类似分页查找。实现渐进式遍历key.  
+   SCAN cursor [MATCH pattern] [COUNT count]   
+   cursor - 游标。  
+   pattern - 匹配的模式。   
+   count - 指定从数据集里返回多少元素，默认值为 10   
+   
+   返回结果中第一个值为整数，作为下一次遍历的cursor; 当返回的cursor为0时表示遍历结束
+   返回结果中第二个值为list, 返回范围内匹配的key值;
+   ```redis 
+   scan 0 match user* count 1000      -- cursor 0   正则 user*   limit 1000
+   ```
+   ![redis](../../../../../resources/images/redis/scan_demo1.png) 
+   测试结果发现4个数据时，limit 若为3，仍然一次返回了全部数据。当limit为2时，就分成了两页。
 ## redis 实现分布式锁
 - incr  
   对某个key执行incr（原子自增操作）, 第一个执行的结果是1， 第二个执行的结果是2.  
