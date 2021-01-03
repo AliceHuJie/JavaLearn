@@ -185,6 +185,7 @@
   混合持久化的好处：  
   - 整合rdb 与aof的优点，数据不易丢失，且redis重启速度更快
   
+  [博客：redis 配置文件配置项介绍](https://www.cnblogs.com/lc-chenlong/p/4194150.html)
 ## redis 实现分布式锁
 - incr  
   对某个key执行incr（原子自增操作）, 第一个执行的结果是1， 第二个执行的结果是2.  
