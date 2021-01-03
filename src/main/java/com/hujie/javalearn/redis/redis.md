@@ -141,11 +141,15 @@
   save  seconds changes
   save  900  1            # 15分钟内至少有1个change(数据更新操作)，就保存一次快照
   save  300  10           # 5分钟内至少有10个change(数据更新操作)，就保存一次快照
+  save ""                 # 不开启RDB
 ```   
   ![redis](../../../../../resources/images/redis/redis-conf-snapshot.png)   
 
 - 2、AOF(append-only file)  
    aof持久化方式默认关闭。
+```
+       appendonly  no     # 默认关闭aof
+```
      ![redis](../../../../../resources/images/redis/redis-conf-aof.png)     
    每当redis执行一个改变数据集的命令时，这个命令会append写入到aof文件中；  
    当redis重启时，会将aof中的命令重新执行。
@@ -155,12 +159,13 @@
     appendfsync everysec    # （aof默认配置）每秒fsync一次，故障时只会丢失1s的数据
     appendfsync no          # 从不fsync
     ```
+   如果AOF和rdb模式都开启，redis重启时只会使用aof中的数据。  
    
 - 3、Redis 4.0 后混合模式  
    重启redis时，若使用rdb快照文件进行内存数据恢复，会丢失大量数据。若只使用aof重放日志操作会启动耗时很长。    
-   因此，4.0 后结合rdb 和aof。
+   因此，4.0 后结合rdb 和aof。  
    ```redis
-   aof-use-rdb-preamble yes  # redis.conf 中开启
+   aof-use-rdb-preamble yes  # redis.conf 中开启aof混合模式（要生效的前提还需开启aof）
    ```
    开启redis重启的时候，预加载rdb的内容，再重放增量的aof文件来替待AOF全量重放。  
    （重写这一刻之前的内存rdb快照文件的内容和增量的 AOF修改内存数据的命令日志文件存在一起，都写入新的aof文件。定期根据内存的最新数据生成aof文件）  
@@ -168,7 +173,18 @@
    - 3.1 混合持久化aof文件结构  
    ![redis](../../../../../resources/images/redis/aof-rdb.png)     
 
-   
+  如果一个key连续set很多次，单独只用aof重写的话会执行很多次操作。  
+  混合模式下，重写当前时刻之前的aof文件生成RDB快照（命令bgrewriteaof），一个key连续set很多次时，aof文件中只会有一条最新结果的set数据。  
+  重写也就实现了aof的文件瘦身。   
+   （纯指令的aof文件就变成了二进制的rdb文件 + 剩余的增量aof（重写过程中新执行的命令））
+  redis.conf配置中对于重写的配置:  
+  ```redis
+    auto-aof-rewrite-percentage 100    # aof 文件大小增长100%，也就是翻倍时，重写
+    auto-aof-rewrite-min-size 64mb     # aof 重写需要文件最小达到64M
+   ```
+  混合持久化的好处：  
+  - 整合rdb 与aof的优点，数据不易丢失，且redis重启速度更快
+  
 ## redis 实现分布式锁
 - incr  
   对某个key执行incr（原子自增操作）, 第一个执行的结果是1， 第二个执行的结果是2.  
