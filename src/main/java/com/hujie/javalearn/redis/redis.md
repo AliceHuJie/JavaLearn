@@ -165,6 +165,55 @@
     ![redis](../../../../../resources/images/redis/redis_storage.png) 
    和hashmap 类似，key hash值相同的存在一个链表里，redis的hash也会涉及rehash(扩容时)。  
    
+   
+## redis 数据结构
+- ### String  
+  redis 3.2以前：
+```
+  struct sdshdr {
+      int len;             // 4个字节，32位，可表示2的32次方长度的空间
+      int free;
+      char[] buf;          // n 字符
+  }
+ 
+ 这种数据结构简单，但是浪费内存，正常情况数据一般比较短，不会需要2的32次方的长度，即不需要32位长度来表示空间大小。
+```
+  redis 3.2以后：  
+  合理优化数据结构大小。用更少的空间去表示数据长度。    
+  根据数据长度，结构分为 sdshdr5,sdshdr8,sdshdr16,sdshdr32,sdshdr64。  
+  分别使用于字符串长度在2^5以内，2^8次方以内，... 2^64以内的字符串。  
+  即：
+    ![redis](../../../../../resources/images/redis/structure/sds_type_define.png) 
+    使用3位type 来标识type, type 0-4 分别对应sdshdr5~sdshdr64.
+  
+  - sdshdr5
+  ```
+   struct sdshdr5 {
+      unsigned char flags;  // 1字节标识位 （低3位：type    高5位： 字符串长度）
+      char buf[];           // n 字符
+   }
+  ``` 
+  ![redis](../../../../../resources/images/redis/structure/sdshdr5.png) 
+  - sdshdr8
+  ```
+   struct sdshdr8 {
+      uint8_t len;         //8 位去表示已使用空间大小
+      uint8_t alloc;       // 分配的总大小  2^8  (即表示长度最多255)
+      unsigned char flags; // 1字节标识位 （低3位：type    高5位： 闲置未用）
+      char buf[];          // n 字符
+   }
+  ``` 
+  ![redis](../../../../../resources/images/redis/structure/sdshdr8.png) 
+  sdshdr16 与 sdshdr8类似,其余类似
+   ```
+     struct sdshdr16 {
+        uint16_t len;         //16 位去表示已使用空间大小
+        uint16_t alloc;       // 分配的总大小  2^16  (即表示长度最多65535)
+        unsigned char flags; // 1字节标识位 （低3位：type    高5位： 闲置未用）
+        char buf[];          // n 字符
+     }
+   ``` 
+  
 ## Redis info 查看redis服务运行信息   
   - Server 服务器信息
   - Clients 
