@@ -163,7 +163,8 @@
 ## Redis 存储结构  
    hashtable 结构  
     ![redis](../../../../../resources/images/redis/redis_storage.png) 
-   和hashmap 类似，key hash值相同的存在一个链表里，redis的hash也会涉及rehash(扩容时)。  
+   和hashmap 类似，key hash值相同的存在一个链表里，hash冲突时使用头插法，插入到链表头部
+   redis的hash也会涉及rehash(扩容时)。  
    
    
 ## redis 数据结构
@@ -309,3 +310,22 @@
 
 - set 
   
+## 缓存淘汰策略
+ 当redis内存超出物理内存限制时，内存数据会和磁盘频繁交换，redis性能急剧下降。生产环境中不应该允许redis
+ 出现交换行为。  
+ redis提供了配置参数maxmemory 限制内存超出期望大小。
+ 
+ 内存超出maxmemory时，可选淘汰策略：
+ - noeviction: 默认策略，无法继续写入，但可以删除。可以保证不丢数据。但是线上业务不能持续进行。
+ - volatile-lru: 淘汰最近最少使用的设置了过期时间的key, 没有设置过期时间的key不会被淘汰。保证需要持久化的数据不会突然丢失。
+ - volatile-ttl: 根据key的剩余寿命的ttl的值，ttl越小越优先被淘汰。
+ - volatile-random: 淘汰过期key集合中的随机key.
+ 
+ - allkeys-lru: 区别于volatile-lru，allkey-lru会针对所有的key进行淘汰。
+ - allkey-random: 全部key中随机淘汰
+
+ 
+ volatile-xxx 策略只会针对带过期时间的key进行淘汰。allkey-xxx 针对全部key.  
+ 
+ 如果只是做缓存，应该使用allkey-xxx. 如果还想使用持久化功能，就使用volatile-xx策略。
+ 这样可以保留没有设置过期时间的key, 是永久的key,不会被lru淘汰。
