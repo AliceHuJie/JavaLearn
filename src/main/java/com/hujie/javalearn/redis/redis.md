@@ -329,3 +329,12 @@
  
  如果只是做缓存，应该使用allkey-xxx. 如果还想使用持久化功能，就使用volatile-xx策略。
  这样可以保留没有设置过期时间的key, 是永久的key,不会被lru淘汰。
+
+
+## 集群方案比较
+- 哨兵模式
+   ![redis](../../../../../resources/images/redis/shaobing.png)     
+
+- 高可用集群模式
+   ![redis](../../../../../resources/images/redis/jiqun.png)     
+ 主从节点群组成的分布式集群。
