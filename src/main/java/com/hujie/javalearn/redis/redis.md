@@ -386,7 +386,12 @@
  ```
   redis-cli --cluster add-node 192.168.0.64:8008  -- 添加新节点入集群，默认都是master, 无槽位
   redis-cli -c -h 192.168.0.64 -p 8008            -- 登录到新加入的节点
-  cluster replicate eb57a5700ee6f9ff099b3ce0d03b1a50ff247c3c   -- 指定作为另一实例的从节点
+  cluster replicate eb57a5700ee6f9ff099b3ce0d03b1a50ff247c3c   -- 指定作为另一实例的从节点  
+  
+
+  ##  删除节点（主节点删除前需要先sharding 槽位分给其他的节点，再进行删除）
+  redis-cli --cluster del-node 192.168.0.64:8007    eb57a5700ee6f9ff099b3ce0d03b1a50ff247c3c
+
  ```
 
 
