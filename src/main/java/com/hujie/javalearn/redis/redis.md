@@ -390,9 +390,32 @@
   
 
   ##  删除节点（主节点删除前需要先sharding 槽位分给其他的节点，再进行删除）
-  redis-cli --cluster del-node 192.168.0.64:8007    eb57a5700ee6f9ff099b3ce0d03b1a50ff247c3c
+  redis-cli --cluster del-node 192.168.0.64:8007    eb57a5700ee6f9ff099b3ce0d03b1a50ff247c3c (中间的ip 和端口并不非得是要删的
+实例，而是集群中任一个即可，只是为了连上集群)
+
+  redis-cli --cluster rebalance  ip:port 重新平衡各主节点之间的槽位。 不建议使用，因为大量节点槽位移动中，可能会造成阻塞，stop the world.
 
  ```
+
+## redis 集群选举原理  
+ slave 发现自己的master 变成fail状态时 （master 挂掉后，经过timeout才会变成fail状态）。 挂掉的master可能有多个slave, 多个slave竞争成为master:  
+ 过程：  
+ 1. save 发现master fail  
+ 2. 集群中current_epoch（集群选举次数） + 1， 竞争的slave节点广播消息给其它节点  
+ 3. 在一个选举周期中，只有master 会响应slave想成为master的信息。 每个master 只会响应一个slave.  
+ 4. 当某个slave收到半数以上的master节点的ack 响应后，就可以成为新的主节点。
+ 5. 成为主节点后，会再次广播给所有节点，告知已成为主节点。 （同时告知竞争的slave无需继续竞争选举）  
+ 
+ 当竞争选举的slave 收到的ACK平票，都未超过半数master响应。本次选举失败，选举次数 + 1，再次进行选举。  
+ 
+ 
+ 为了避免无限次死循环的选举。从节点不是在主节点一fail同时发起选举。而是有一定延迟。 
+ DELAY = 500ms + random(0~500ms) + slave_rank * 1000ms  
+ slave_rank 表示此slave 已经从master复制数据总量的rank, rank 越小表示已复制的数据越新。delay 也就越小，理论上，持有最新数据的slave将有更大的概率选举成功。
+ 
+ 
+ 集群至少要有三个master节点（不然一个master挂掉时，永远不会有超过半数master的ACK）
+ 
 
 
   
