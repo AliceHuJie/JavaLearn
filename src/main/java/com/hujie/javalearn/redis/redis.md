@@ -280,7 +280,7 @@
    （重写这一刻之前的内存rdb快照文件的内容和增量的 AOF修改内存数据的命令日志文件存在一起，都写入新的aof文件。定期根据内存的最新数据生成aof文件）  
    
    - 3.1 混合持久化aof文件结构  
-   ![redis](../../../../../resources/images/redis/aof-rdb.png)     
+  ![redis](../../../../../resources/images/redis/redis-conf-aof.png)   
 
   如果一个key连续set很多次，单独只用aof重写的话会执行很多次操作。  
   混合模式下，重写当前时刻之前的aof文件生成RDB快照（命令bgrewriteaof），一个key连续set很多次时，aof文件中只会有一条最新结果的set数据。  
@@ -379,6 +379,8 @@
   ![redis](../../../../../resources/images/redis/cluster/cluster-help.png)  
   
  迁移槽位到新节点时，可以选择all 模式从当前所有master分割槽位，或者指定某台master进行槽位的分割。    
+   ![redis](../../../../../resources/images/redis/cluster/reshard.png)   
+
  迁移槽位的时候，数据也会同时迁移。此时若新数据向某个迁移中的槽位插入，会阻塞。  
  迁移期间客户端是无感知的。只有实际操作遇到跳转重定向后，客户端会同步更新本地的槽位机器映射表。
   
