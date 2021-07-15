@@ -1,16 +1,18 @@
 package com.hujie.distributelock;
 
-import lombok.AllArgsConstructor;
-import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@AllArgsConstructor
 @RestController
 public class TestController {
 
-    private Redisson redisson;
+    @Autowired
+    private RedissonClient redissonClient;
+
+    @Autowired
     private StringRedisTemplate redisTemplate;
 
     @GetMapping("/deduct-stock")
