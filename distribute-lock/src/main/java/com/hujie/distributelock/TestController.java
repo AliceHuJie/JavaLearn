@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RestController("/test-lock")
@@ -78,6 +79,7 @@ public class TestController {
     //             第一个线程还未执行完，由于锁超时释放，第二个线程加锁进入
     //             第一个线程执行到程序末尾，第二个线程执行到程序中途，线程一删掉了线程二的锁
     //             第二个线程无锁执行，第三个线程并发进入...
+    // 分析： 自己加的锁只能由自己释放，不应该被别的线程释放
     @GetMapping("/red-stock")
     public void redLock2() {
         String lockKey = "lockKey";
@@ -102,6 +104,34 @@ public class TestController {
         } finally {
             // 释放锁
             redisTemplate.delete(lockKey);
+        }
+    }
+
+    // 通过setnx 实现分布式锁   锁的value设置为当前线程的id,释放锁时只有值 = 当前线程id才释放
+    @GetMapping("/red-stock")
+    public void redLock3() {
+        String lockKey = "lockKey";
+        // 唯一标识当前线程
+        String clientId = UUID.randomUUID().toString();
+        try {
+            // 原子操作设置锁，值为线程唯一标识
+            Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, clientId, 10, TimeUnit.SECONDS);
+            if (!lock) {
+                return;
+            }
+            Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
+            if (stock > 0) {
+                int newSock = stock - 1;
+                redisTemplate.opsForValue().set("stock", newSock + "");
+                System.out.println("库存扣减成功，剩余库存：" + newSock);
+            } else {
+                System.out.println("库存不足，当前库存：" + stock);
+            }
+        } finally {
+            // 释放锁时，对比锁是否是当前线程加的
+            if (clientId.equals(redisTemplate.opsForValue().get(lockKey))) {
+                redisTemplate.delete(lockKey);
+            }
         }
     }
 }
