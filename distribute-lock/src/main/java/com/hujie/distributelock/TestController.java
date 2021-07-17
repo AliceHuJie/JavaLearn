@@ -64,10 +64,10 @@ public class TestController {
         String lockKey = "lockKey";
         // 加锁
         Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie");
+        if (!lock) {
+            return;
+        }
         try {
-            if (!lock) {
-                return;
-            }
             Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
             if (stock > 0) {
                 int newSock = stock - 1;
@@ -78,7 +78,7 @@ public class TestController {
             }
         } finally {
             // 释放锁，必须要判断是否有锁，否则没拿到锁的线程也进finally也会删除别人的锁
-            if(lock){
+            if (lock) {
                 redisTemplate.delete(lockKey);
             }
         }
@@ -94,19 +94,25 @@ public class TestController {
     @GetMapping("/red-stock2")
     public void redLock2() {
         String lockKey = "lockKey";
-        try {
-/*            // 加锁并设置超时时间  但是非原子操作做
+/*          // 加锁并设置超时时间  但是非原子操作, 会有问题
             Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie");
             redisTemplate.expire(lockKey, 10, TimeUnit.SECONDS);*/
 
-            // 原子操作获取锁并设置超时时间
-            Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie", 10, TimeUnit.SECONDS);
-            if (!lock) {
-                return;
-            }
+        // 原子操作获取锁并设置超时时间
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie", 10, TimeUnit.SECONDS);
+        if (!lock) {
+            return;
+        }
+        try {
             Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
             if (stock > 0) {
                 int newSock = stock - 1;
+                try {
+                    System.out.println("模拟线程执行时间大于锁的时间");
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 redisTemplate.opsForValue().set("stock", newSock + "");
                 System.out.println("库存扣减成功，剩余库存：" + newSock);
             } else {
@@ -114,7 +120,10 @@ public class TestController {
             }
         } finally {
             // 释放锁
-            redisTemplate.delete(lockKey);
+            if (lock) {
+                // 这里也有问题，执行可能会删除别人加的锁
+                redisTemplate.delete(lockKey);
+            }
         }
     }
 
@@ -124,12 +133,12 @@ public class TestController {
         String lockKey = "lockKey";
         // 唯一标识当前线程
         String clientId = UUID.randomUUID().toString();
+        // 原子操作设置锁，值为线程唯一标识
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, clientId, 10, TimeUnit.SECONDS);
+        if (!lock) {
+            return;
+        }
         try {
-            // 原子操作设置锁，值为线程唯一标识
-            Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, clientId, 10, TimeUnit.SECONDS);
-            if (!lock) {
-                return;
-            }
             Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
             if (stock > 0) {
                 int newSock = stock - 1;
@@ -140,7 +149,7 @@ public class TestController {
             }
         } finally {
             // 释放锁时，对比锁是否是当前线程加的
-            if (clientId.equals(redisTemplate.opsForValue().get(lockKey))) {
+            if (lock && clientId.equals(redisTemplate.opsForValue().get(lockKey))) {
                 redisTemplate.delete(lockKey);
             }
         }
