@@ -16,4 +16,5 @@ public class RedissonConfig {
         Config config = Config.fromYAML(RedissonConfig.class.getClassLoader().getResource("redisson.yml"));
         return Redisson.create(config);
     }
+
 }

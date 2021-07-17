@@ -1,22 +1,29 @@
 package com.hujie.distributelock;
 
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@RestController("/test-lock")
+@RestController
+@RequestMapping(value = "/test-lock")
 public class TestController {
 
-    @Autowired
     private RedissonClient redissonClient;
 
-    @Autowired
     private StringRedisTemplate redisTemplate;
+
+
+    public TestController(RedissonClient redissonClient, StringRedisTemplate redisTemplate) {
+        this.redissonClient = redissonClient;
+        this.redisTemplate = redisTemplate;
+        // 设置库存初始值，方便每次压测
+        redisTemplate.opsForValue().set("stock", "100");
+    }
 
     // 无锁
     // 问题： 并发有问题
@@ -33,11 +40,13 @@ public class TestController {
     }
 
     // 单机 JDK锁
-    // 问题： 单机部署OK， 分布式部署有问题；即多个机器实例有打印出相同的剩余库存值，也就是超卖了
+    // 问题: 单机部署OK, 分布式部署有问题；即多个机器实例有打印出相同的剩余库存值，也就是超卖了
     @GetMapping("/deduct-stock-synchronized")
     public void deductSynchronized() {
-        Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
+        // 有问题，获取值的操作在加锁前。多个线程会先拿到相同的值再去排队拿锁，也会超卖
+        // Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
         synchronized (this) {
+            Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
             if (stock > 0) {
                 int newSock = stock - 1;
                 redisTemplate.opsForValue().set("stock", newSock + "");
@@ -53,9 +62,9 @@ public class TestController {
     @GetMapping("/red-stock")
     public void redLock() {
         String lockKey = "lockKey";
+        // 加锁
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie");
         try {
-            // 加锁
-            Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie");
             if (!lock) {
                 return;
             }
@@ -68,8 +77,10 @@ public class TestController {
                 System.out.println("库存不足，当前库存：" + stock);
             }
         } finally {
-            // 释放锁
-            redisTemplate.delete(lockKey);
+            // 释放锁，必须要判断是否有锁，否则没拿到锁的线程也进finally也会删除别人的锁
+            if(lock){
+                redisTemplate.delete(lockKey);
+            }
         }
     }
 
@@ -80,7 +91,7 @@ public class TestController {
     //             第一个线程执行到程序末尾，第二个线程执行到程序中途，线程一删掉了线程二的锁
     //             第二个线程无锁执行，第三个线程并发进入...
     // 分析： 自己加的锁只能由自己释放，不应该被别的线程释放
-    @GetMapping("/red-stock")
+    @GetMapping("/red-stock2")
     public void redLock2() {
         String lockKey = "lockKey";
         try {
@@ -108,7 +119,7 @@ public class TestController {
     }
 
     // 通过setnx 实现分布式锁   锁的value设置为当前线程的id,释放锁时只有值 = 当前线程id才释放
-    @GetMapping("/red-stock")
+    @GetMapping("/red-stock3")
     public void redLock3() {
         String lockKey = "lockKey";
         // 唯一标识当前线程
