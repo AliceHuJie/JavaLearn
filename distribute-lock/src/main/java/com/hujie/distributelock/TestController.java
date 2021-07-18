@@ -1,6 +1,7 @@
 package com.hujie.distributelock;
 
-import org.redisson.api.RedissonClient;
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,13 +14,13 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping(value = "/test-lock")
 public class TestController {
 
-    private RedissonClient redissonClient;
+    private Redisson redisson;
 
     private StringRedisTemplate redisTemplate;
 
 
-    public TestController(RedissonClient redissonClient, StringRedisTemplate redisTemplate) {
-        this.redissonClient = redissonClient;
+    public TestController(Redisson redisson, StringRedisTemplate redisTemplate) {
+        this.redisson = redisson;
         this.redisTemplate = redisTemplate;
         // 设置库存初始值，方便每次压测
         redisTemplate.opsForValue().set("stock", "100");
@@ -172,8 +173,44 @@ public class TestController {
     // 正确方法： 加较短的锁，在程序执行过程中不断的刷新锁的过期时间。
     //           主线程执行过程中，开启异步线程去定时刷新锁的时间
     //           比如锁时间为30S，每隔10S检测当前线程的锁是否还在，如果还在，则继续刷新过期时间为30S.
-
     // 锁续命的逻辑，自己写很容易有新的bug, 现有redisson框架已经实现了该逻辑
+    @GetMapping("/red-stock4")
+    public void redLock4() {
+        String lockKey = "lockKey";
+        // 唯一标识当前线程
+        RLock redissonLock = redisson.getLock(lockKey);
+        try {
+            //等价于setIfAbsent(lockKey, clientId,1, TimeUnit.SECONDS)
+            if (!redissonLock.tryLock(2, TimeUnit.SECONDS)) {
+                return;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-
+        try {
+            // 加锁，若不设置时间默认30s，看门狗是每1/3 即10S 进行一次锁续命。 可自行根据锁的时长相应设置看门狗时长
+            Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
+            if (stock > 0) {
+                int newSock = stock - 1;
+                try {
+                    System.out.println("模拟线程执行时间大于锁的时间");
+                    Thread.sleep(5000L);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                redisTemplate.opsForValue().set("stock", newSock + "");
+                System.out.println("库存扣减成功，剩余库存：" + newSock);
+            } else {
+                System.out.println("库存不足，当前库存：" + stock);
+            }
+        } finally {
+            // 释放锁  内部逻辑有判断是否有锁，以及锁是否是自己加的
+            if (redissonLock.isHeldByCurrentThread()) {
+                // 可以通过单请求测试，程序结束的时候判断锁是否还在看出看门狗是否生效
+//                System.out.println("当前仍然锁还在");
+                redissonLock.unlock();
+            }
+        }
+    }
 }
