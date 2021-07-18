@@ -99,7 +99,7 @@ public class TestController {
             redisTemplate.expire(lockKey, 10, TimeUnit.SECONDS);*/
 
         // 原子操作获取锁并设置超时时间
-        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie", 10, TimeUnit.SECONDS);
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "hujie", 1, TimeUnit.SECONDS);
         if (!lock) {
             return;
         }
@@ -109,7 +109,7 @@ public class TestController {
                 int newSock = stock - 1;
                 try {
                     System.out.println("模拟线程执行时间大于锁的时间");
-                    Thread.sleep(2000);
+                    Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -128,6 +128,9 @@ public class TestController {
     }
 
     // 通过setnx 实现分布式锁   锁的value设置为当前线程的id,释放锁时只有值 = 当前线程id才释放
+    // 问题： 会出现线程1执行到中途未执行完，线程2获取锁成功并进入同步代码块，甚至1s后线程3紧接着进入。
+    //       但是进入时间有锁时间：1S的间隔，所以多个线程即使都处于同步代码块中执行，但是进入串行，所以不会导致超卖
+    //       执行时间 》 加锁时间引起并发问题主要原因是一个线程释放了另一个线程的锁
     @GetMapping("/red-stock3")
     public void redLock3() {
         String lockKey = "lockKey";
@@ -142,6 +145,12 @@ public class TestController {
             Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
             if (stock > 0) {
                 int newSock = stock - 1;
+                try {
+                    System.out.println("模拟线程执行时间大于锁的时间");
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 redisTemplate.opsForValue().set("stock", newSock + "");
                 System.out.println("库存扣减成功，剩余库存：" + newSock);
             } else {
