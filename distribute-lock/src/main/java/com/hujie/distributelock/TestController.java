@@ -128,16 +128,16 @@ public class TestController {
     }
 
     // 通过setnx 实现分布式锁   锁的value设置为当前线程的id,释放锁时只有值 = 当前线程id才释放
-    // 问题： 会出现线程1执行到中途未执行完，线程2获取锁成功并进入同步代码块，甚至1s后线程3紧接着进入。
-    //       但是进入时间有锁时间：1S的间隔，所以多个线程即使都处于同步代码块中执行，但是进入串行，所以不会导致超卖
-    //       执行时间 》 加锁时间引起并发问题主要原因是一个线程释放了另一个线程的锁
+    // 问题： 仍旧会出现线程1执行到中途未执行完，线程2获取锁成功并进入同步代码块，甚至1s后线程3紧接着进入。
+    //       线程1还未执行到扣减库存，线程2又读到了相同的库存进行减一操作
+    // 分析： 必须要事务执行完再释放锁，让其他线程进入
     @GetMapping("/red-stock3")
     public void redLock3() {
         String lockKey = "lockKey";
         // 唯一标识当前线程
         String clientId = UUID.randomUUID().toString();
         // 原子操作设置锁，值为线程唯一标识
-        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, clientId, 10, TimeUnit.SECONDS);
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, clientId, 1, TimeUnit.SECONDS);
         if (!lock) {
             return;
         }
@@ -163,4 +163,17 @@ public class TestController {
             }
         }
     }
+
+    // 如何保证锁的时间大于线程执行时间？？？
+    // 1. 锁时间 < 执行时间 会出现并发问题
+    // 2. 无法知道最大执行时间是多少，找到合理的锁时间
+    // 3. 只是加大锁的时长，会出现后续线程长时间等待问题。且一旦宕机或重启，之前的锁可能还没到过期时间还得等待
+
+    // 正确方法： 加较短的锁，在程序执行过程中不断的刷新锁的过期时间。
+    //           主线程执行过程中，开启异步线程去定时刷新锁的时间
+    //           比如锁时间为30S，每隔10S检测当前线程的锁是否还在，如果还在，则继续刷新过期时间为30S.
+
+    // 锁续命的逻辑，自己写很容易有新的bug, 现有redisson框架已经实现了该逻辑
+
+
 }
