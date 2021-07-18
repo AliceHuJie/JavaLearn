@@ -187,7 +187,7 @@ public class TestController {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
+        // redissonLock.lock(2, TimeUnit.SECONDS);  lock与看门狗配合不生效，需要使用trylock
         try {
             // 加锁，若不设置时间默认30s，看门狗是每1/3 即10S 进行一次锁续命。 可自行根据锁的时长相应设置看门狗时长
             Integer stock = Integer.valueOf(redisTemplate.opsForValue().get("stock"));
