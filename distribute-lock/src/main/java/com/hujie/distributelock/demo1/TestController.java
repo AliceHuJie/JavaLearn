@@ -1,4 +1,4 @@
-package com.hujie.distributelock;
+package com.hujie.distributelock.demo1;
 
 import org.redisson.Redisson;
 import org.redisson.api.RLock;
